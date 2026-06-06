@@ -4,3 +4,7 @@ static/generated/
 __pycache__/
 *.pyc
 .opencode/
+.playwright-mcp/
+flask_error.log
+flask_output.log
+skills-lock.json

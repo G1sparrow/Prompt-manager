@@ -1,0 +1,6 @@
+config.json
+prompts.db
+static/generated/
+__pycache__/
+*.pyc
+.opencode/

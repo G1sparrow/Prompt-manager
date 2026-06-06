@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptManager - 提示词管理工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <header id="app-header">
+            <h1>PromptManager</h1>
+            <span class="subtitle">提示词管理工具</span>
+        </header>
+
+        <div id="app-body">
+            <aside id="sidebar">
+                <nav id="nav-dashboard">
+                    <div class="nav-section-title">仪表盘</div>
+                    <div class="nav-item active" data-view="expand">
+                        <span class="nav-icon">📝</span>
+                        <span>扩写</span>
+                    </div>
+                    <div class="nav-item" data-view="translate">
+                        <span class="nav-icon">🌐</span>
+                        <span>翻译</span>
+                    </div>
+                </nav>
+
+                <div class="sidebar-divider"></div>
+
+                <div id="nav-folders" style="flex:1;">
+                    <div class="nav-section-title">
+                        <span>📁 我的文件夹</span>
+                        <button class="btn-icon" id="btn-add-folder" title="新建文件夹">+</button>
+                    </div>
+                    <div id="folder-list">
+                    </div>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <div class="nav-item" data-view="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>设置</span>
+                </div>
+            </aside>
+
+            <main id="content">
+
+                <div id="view-expand" class="content-view active">
+                    <h2>📝 提示词扩写</h2>
+                    <p class="view-desc">输入基础提示词，选择扩写风格，AI将为你扩写为详细的文生图prompt</p>
+                    <div class="preset-bar">
+                        <label>扩写风格：</label>
+                        <select id="global-prompt-select">
+                            <option value="">-- 加载中 --</option>
+                        </select>
+                        <button class="btn-small" id="btn-manage-presets">⚙️ 管理</button>
+                    </div>
+                    <div class="input-area">
+                        <textarea id="expand-input" placeholder="输入你想要扩写的提示词，例如：a cute cat sitting on windowsill" rows="4"></textarea>
+                    </div>
+                    <div class="action-row">
+                        <button id="btn-expand" class="btn-primary">✨ 扩写</button>
+                    </div>
+                    <div id="expand-result" class="result-area" style="display:none;">
+                        <div class="result-header">
+                            <h3>扩写结果</h3>
+                            <div class="result-header-actions">
+                                <button class="btn-small" id="btn-add-expand">📁 添加</button>
+                                <button class="btn-small" id="btn-copy-expand">📋 复制</button>
+                            </div>
+                        </div>
+                        <div id="expand-content" class="result-content"></div>
+                        <div class="action-row">
+                            <button class="btn-secondary" id="btn-save-expand">💾 保存到文件夹</button>
+                        </div>
+                    </div>
+                    <div id="expand-loading" class="loading-indicator" style="display:none;">
+                        <div class="spinner"></div>
+                        <span>正在扩写中...</span>
+                    </div>
+                </div>
+
+                <div id="view-translate" class="content-view">
+                    <h2>🌐 提示词翻译</h2>
+                    <p class="view-desc">输入中文或英文提示词，翻译为其他语言</p>
+                    <div class="input-area">
+                        <textarea id="translate-input" placeholder="输入要翻译的中文或英文提示词..." rows="4"></textarea>
+                    </div>
+                    <div class="action-row">
+                        <div class="lang-selector">
+                            <label>目标语言：</label>
+                            <select id="translate-target">
+                                <option value="en">English (英语)</option>
+                                <option value="zh">中文</option>
+                                <option value="ja">日本語 (日语)</option>
+                                <option value="ko">한국어 (韩语)</option>
+                                <option value="fr">Français (法语)</option>
+                                <option value="de">Deutsch (德语)</option>
+                                <option value="ru">Русский (俄语)</option>
+                                <option value="es">Español (西班牙语)</option>
+                            </select>
+                        </div>
+                        <button id="btn-translate" class="btn-primary">🌍 翻译</button>
+                    </div>
+                    <div id="translate-result" class="result-area" style="display:none;">
+                        <div class="result-header">
+                            <h3>翻译结果</h3>
+                            <div class="result-header-actions">
+                                <button class="btn-small" id="btn-add-translate">📁 添加</button>
+                                <button class="btn-small" id="btn-copy-translate">📋 复制</button>
+                            </div>
+                        </div>
+                        <div id="translate-content" class="result-content"></div>
+                        <div class="action-row">
+                            <button class="btn-secondary" id="btn-save-translate">💾 保存到文件夹</button>
+                        </div>
+                    </div>
+                    <div id="translate-loading" class="loading-indicator" style="display:none;">
+                        <div class="spinner"></div>
+                        <span>正在翻译中...</span>
+                    </div>
+                </div>
+
+                <div id="view-folder" class="content-view">
+                    <div class="folder-toolbar">
+                        <h2 id="folder-view-title">📁 文件夹</h2>
+                        <button class="btn-small" id="btn-new-prompt">✏️ 新建提示词</button>
+                    </div>
+                    <div id="folder-prompts-grid">
+                    </div>
+                    <div id="folder-empty" class="empty-state">
+                        <p>该文件夹还没有提示词</p>
+                        <p class="hint">在扩写或翻译结果中点击"保存到文件夹"</p>
+                    </div>
+                </div>
+
+                <div id="view-prompt-detail" class="content-view">
+                    <button class="btn-small" id="btn-back-to-folder">← 返回文件夹</button>
+                    <h2 id="detail-title"></h2>
+                    <div class="detail-card">
+                        <div class="detail-meta">
+                            <span id="detail-folder"></span>
+                            <span id="detail-date"></span>
+                        </div>
+                        <div class="detail-summary" id="detail-summary-area" style="display:none;">
+                            <h4>摘要备注</h4>
+                            <p id="detail-summary-text"></p>
+                        </div>
+                        <div class="detail-content">
+                            <h4>提示词内容</h4>
+                            <pre id="detail-content-text"></pre>
+                        </div>
+                        <div class="detail-image" id="detail-image-area" style="display:none;">
+                            <h4>对应图片</h4>
+                            <img id="detail-image" src="" alt="prompt image">
+                        </div>
+                        <div class="action-row">
+                            <button class="btn-small" id="btn-copy-detail">📋 复制</button>
+                            <button class="btn-danger" id="btn-delete-detail">🗑️ 删除</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-settings" class="content-view">
+                    <h2>⚙️ 设置</h2>
+                    <div class="settings-section">
+                        <h3>🤖 LLM 大模型配置 (用于提示词扩写)</h3>
+                        <div class="form-group">
+                            <label>API 地址</label>
+                            <input type="text" id="cfg-llm-base-url" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="password" id="cfg-llm-api-key" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label>模型名称</label>
+                            <select id="cfg-llm-model">
+                                <option value="">-- 选择模型 --</option>
+                            </select>
+                            <div id="cfg-llm-model-custom-wrap" style="display:none;margin-top:8px;">
+                                <input type="text" id="cfg-llm-model-custom" placeholder="输入自定义模型名称">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>🌍 百度翻译配置 (用于提示词翻译)</h3>
+                        <div class="form-group">
+                            <label>APP ID</label>
+                            <input type="text" id="cfg-baidu-appid" placeholder="你的百度翻译APP ID">
+                        </div>
+                        <div class="form-group">
+                            <label>Secret Key</label>
+                            <input type="password" id="cfg-baidu-secret" placeholder="你的百度翻译密钥">
+                        </div>
+                    </div>
+                    <div class="action-row">
+                        <button id="btn-save-config" class="btn-primary">💾 保存配置</button>
+                    </div>
+                    <div id="config-status" class="config-status"></div>
+                </div>
+            </main>
+        </div>
+
+        <footer id="app-footer">
+            <span id="status-api">⏳ API状态：未配置</span>
+            <span id="status-db">✅ 数据库：已连接</span>
+        </footer>
+    </div>
+
+    <div id="save-dialog" class="dialog-overlay" style="display:none;">
+        <div class="dialog">
+            <h3 id="dialog-title-label">保存提示词</h3>
+            <div class="form-group">
+                <label>标题 <span class="required">*</span></label>
+                <input type="text" id="dialog-title" placeholder="给这个提示词起个名字">
+            </div>
+            <div class="form-group">
+                <label>提示词内容 <span class="required">*</span></label>
+                <textarea id="dialog-content" rows="6" placeholder="输入提示词内容..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>图片地址（可选）</label>
+                <input type="text" id="dialog-image-url" placeholder="输入图片 URL 或本地路径">
+            </div>
+            <div class="form-group">
+                <label>保存到文件夹</label>
+                <select id="dialog-folder"></select>
+            </div>
+            <div class="form-group">
+                <label>摘要备注（可选）</label>
+                <textarea id="dialog-summary" rows="3" placeholder="为这个提示词添加一段简短描述或备注..."></textarea>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-secondary" id="dialog-cancel">取消</button>
+                <button class="btn-primary" id="dialog-confirm">确认保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="preset-dialog" class="dialog-overlay" style="display:none;">
+        <div class="dialog dialog-wide">
+            <h3>⚙️ 管理扩写风格预设</h3>
+            <p class="view-desc">自定义AI扩写时的风格指令。内置预设不可编辑或删除。</p>
+            <div id="preset-list"></div>
+            <div class="dialog-actions">
+                <button class="btn-secondary" id="btn-add-preset">➕ 新建预设</button>
+                <button class="btn-primary" id="btn-close-presets">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="preset-edit-dialog" class="dialog-overlay" style="display:none;">
+        <div class="dialog">
+            <h3 id="preset-edit-title">新建预设</h3>
+            <div class="form-group">
+                <label>预设名称</label>
+                <input type="text" id="preset-edit-name" placeholder="例如：赛博朋克风">
+            </div>
+            <div class="form-group">
+                <label>系统指令（System Prompt）</label>
+                <textarea id="preset-edit-content" rows="10" placeholder="在此输入系统指令模板..."></textarea>
+                <p class="form-hint">提示：可用 <code>{user_input}</code> 作为用户输入的占位符。参考内置预设的格式。</p>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-secondary" id="preset-edit-cancel">取消</button>
+                <button class="btn-primary" id="preset-edit-confirm">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

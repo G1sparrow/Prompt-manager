@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
 let currentView = 'expand';
 let currentFolderId = null;
 let currentPromptContent = '';
+let currentNegativeContent = '';
 let currentPromptSource = null;
 
 function initApp() {
@@ -29,11 +30,24 @@ function initApp() {
     document.getElementById('btn-back-to-folder').addEventListener('click', backToFolder);
     document.getElementById('btn-delete-detail').addEventListener('click', deleteCurrentPrompt);
     document.getElementById('btn-save-config').addEventListener('click', saveConfig);
-    document.getElementById('dialog-cancel').addEventListener('click', hideSaveDialog);
-    document.getElementById('dialog-confirm').addEventListener('click', confirmSave);
-    document.getElementById('btn-new-prompt').addEventListener('click', () => showSaveDialog('new'));
+document.getElementById('dialog-cancel').addEventListener('click', hideSaveDialog);
+document.getElementById('dialog-confirm').addEventListener('click', confirmSave);
+document.getElementById('dialog-sampler').addEventListener('change', function() {
+    const customInput = document.getElementById('dialog-sampler-custom');
+    if (this.value === '__custom__') {
+        customInput.classList.add('show');
+        customInput.focus();
+    } else {
+        customInput.classList.remove('show');
+        customInput.value = '';
+    }
+});
+document.getElementById('btn-new-prompt').addEventListener('click', () => showSaveDialog('new'));
     document.getElementById('btn-add-expand').addEventListener('click', () => showSaveDialog('expand'));
     document.getElementById('btn-add-translate').addEventListener('click', () => showSaveDialog('translate'));
+    document.getElementById('dialog-cfg').addEventListener('input', function () {
+        document.getElementById('cfg-value').textContent = parseFloat(this.value).toFixed(1);
+    });
     document.getElementById('btn-manage-presets').addEventListener('click', showPresetManager);
     document.getElementById('btn-close-presets').addEventListener('click', hidePresetManager);
     document.getElementById('btn-add-preset').addEventListener('click', () => showPresetEditor(null));
@@ -41,6 +55,14 @@ function initApp() {
     document.getElementById('preset-edit-confirm').addEventListener('click', confirmPresetEdit);
 
     loadGlobalPrompts();
+
+    /* ========== Save Dialog Image Upload ========== */
+    const imgUploadArea = document.getElementById('dialog-image-area');
+    const imgFileInput = document.getElementById('dialog-image-file');
+    imgUploadArea.addEventListener('click', () => imgFileInput.click());
+    imgFileInput.addEventListener('change', function () {
+        if (this.files.length > 0) uploadDialogImage(this.files[0]);
+    });
 
     /* ========== Inspect ========== */
     const uploadArea = document.getElementById('inspect-upload-area');
@@ -231,6 +253,33 @@ function showPromptDetail(promptId) {
             document.getElementById('detail-folder').textContent = '📁 文件夹 #' + p.folder_id;
             document.getElementById('detail-date').textContent = '🕐 ' + new Date(p.created_at).toLocaleString('zh-CN');
 
+            const metaData = [
+                { key: 'model', label: '模型', el: 'detail-model', val: p.model },
+                { key: 'sampler', label: '采样方法', el: 'detail-sampler', val: p.sampler },
+                { key: 'steps', label: '迭代步数', el: 'detail-steps', val: p.steps },
+                { key: 'cfg', label: 'CFG', el: 'detail-cfg', val: p.cfg },
+                { key: 'seed', label: '种子', el: 'detail-seed', val: p.seed }
+            ];
+            metaData.forEach(m => {
+                const area = document.getElementById(m.el + '-area');
+                const text = document.getElementById(m.el);
+                if (m.val) {
+                    area.style.display = 'flex';
+                    text.textContent = m.val;
+                } else {
+                    area.style.display = 'none';
+                }
+            });
+
+            const negativeArea = document.getElementById('detail-negative-area');
+            const negativeText = document.getElementById('detail-negative-text');
+            if (p.negative_content) {
+                negativeArea.style.display = 'block';
+                negativeText.textContent = p.negative_content;
+            } else {
+                negativeArea.style.display = 'none';
+            }
+
             const summaryArea = document.getElementById('detail-summary-area');
             const summaryText = document.getElementById('detail-summary-text');
             if (p.summary) {
@@ -299,6 +348,7 @@ function doExpand() {
         }
         document.getElementById('expand-content').textContent = data.result;
         currentPromptContent = data.result;
+        currentNegativeContent = '';
         currentPromptSource = 'expand';
         resultArea.style.display = 'block';
     })
@@ -352,6 +402,7 @@ function doInspect(file) {
         document.getElementById('inspect-negative').textContent = data.negative_prompt || '(无)';
         document.getElementById('inspect-params').textContent = data.parameters || '(无)';
         currentPromptContent = data.prompt || '';
+        currentNegativeContent = data.negative_prompt || '';
         currentPromptSource = 'inspect';
         resultArea.style.display = 'block';
     })
@@ -409,6 +460,7 @@ function doTranslate() {
         }
         document.getElementById('translate-content').textContent = data.result;
         currentPromptContent = data.result;
+        currentNegativeContent = '';
         currentPromptSource = 'translate';
         resultArea.style.display = 'block';
     })
@@ -422,16 +474,33 @@ function doTranslate() {
 function showSaveDialog(source) {
     currentPromptSource = source;
     document.getElementById('dialog-title').value = '';
+    document.getElementById('dialog-model').value = '';
+    document.getElementById('dialog-sampler').value = '';
+    const customSampler = document.getElementById('dialog-sampler-custom');
+    customSampler.classList.remove('show');
+    customSampler.value = '';
+    document.getElementById('dialog-steps').value = '';
+    document.getElementById('dialog-cfg').value = '7';
+    document.getElementById('cfg-value').textContent = '7.0';
+    document.getElementById('dialog-seed').value = '';
     document.getElementById('dialog-summary').value = '';
     document.getElementById('dialog-image-url').value = '';
+    document.getElementById('dialog-image-preview').style.display = 'none';
+    document.getElementById('dialog-image-preview').src = '';
+    document.getElementById('dialog-image-placeholder').style.display = 'flex';
 
-    const contentField = document.getElementById('dialog-content');
+    const posField = document.getElementById('dialog-content-positive');
+    const negField = document.getElementById('dialog-content-negative');
     if (source === 'new') {
-        contentField.value = '';
-        contentField.placeholder = '输入提示词内容...';
+        posField.value = '';
+        posField.placeholder = '输入正面提示词...';
+        negField.value = '';
+        negField.placeholder = '输入负面提示词（可选）';
     } else {
-        contentField.value = currentPromptContent || '';
-        contentField.placeholder = '';
+        posField.value = currentPromptContent || '';
+        posField.placeholder = '';
+        negField.value = currentNegativeContent || '';
+        negField.placeholder = '';
     }
 
     document.getElementById('save-dialog').style.display = 'flex';
@@ -450,23 +519,53 @@ function hideSaveDialog() {
     document.getElementById('save-dialog').style.display = 'none';
 }
 
+function uploadDialogImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        document.getElementById('dialog-image-url').value = data.image_url;
+        const preview = document.getElementById('dialog-image-preview');
+        preview.src = data.image_url;
+        preview.style.display = 'block';
+        document.getElementById('dialog-image-placeholder').style.display = 'none';
+    })
+    .catch(err => {
+        alert('图片上传失败: ' + err.message);
+    });
+}
+
 function confirmSave() {
     const title = document.getElementById('dialog-title').value.trim();
     const folderId = parseInt(document.getElementById('dialog-folder').value);
-    const content = document.getElementById('dialog-content').value.trim();
+    const posContent = document.getElementById('dialog-content-positive').value.trim();
+    const negContent = document.getElementById('dialog-content-negative').value.trim();
     const summary = document.getElementById('dialog-summary').value.trim();
     const imageUrl = document.getElementById('dialog-image-url').value.trim();
+    const model = document.getElementById('dialog-model').value.trim();
+    const samplerSelect = document.getElementById('dialog-sampler');
+    const sampler = samplerSelect.value === '__custom__'
+        ? document.getElementById('dialog-sampler-custom').value.trim()
+        : samplerSelect.value.trim();
+    const steps = document.getElementById('dialog-steps').value.trim();
+    const cfg = document.getElementById('dialog-cfg').value.trim();
+    const seed = document.getElementById('dialog-seed').value.trim();
 
-    if (!title) {
-        alert('请输入提示词标题');
-        return;
-    }
-
-    const saveContent = content || currentPromptContent;
+    const saveContent = posContent || currentPromptContent;
     if (!saveContent) {
-        alert('请输入提示词内容');
+        alert('请输入正面提示词');
         return;
     }
+    const saveNegContent = negContent || currentNegativeContent;
 
     fetch('/api/prompts', {
         method: 'POST',
@@ -475,8 +574,14 @@ function confirmSave() {
             folder_id: folderId,
             title: title,
             content: saveContent,
+            negative_content: saveNegContent,
             summary: summary,
-            image_path: imageUrl
+            image_path: imageUrl,
+            model: model,
+            sampler: sampler,
+            steps: steps,
+            cfg: cfg,
+            seed: seed
         })
     })
     .then(r => r.json())
@@ -485,7 +590,9 @@ function confirmSave() {
             alert(data.error);
         } else {
             hideSaveDialog();
-            alert('保存成功！');
+            if (currentFolderId) {
+                showFolderView(currentFolderId);
+            }
         }
     });
 }

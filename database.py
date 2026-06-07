@@ -42,6 +42,17 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    for col in ('model', 'sampler', 'steps', 'cfg', 'seed'):
+        try:
+            cursor.execute(f'ALTER TABLE prompts ADD COLUMN {col} TEXT DEFAULT \'\'')
+        except sqlite3.OperationalError:
+            pass
+
+    try:
+        cursor.execute('ALTER TABLE prompts ADD COLUMN negative_content TEXT DEFAULT \'\'')
+    except sqlite3.OperationalError:
+        pass
+
     cursor.execute('''
         INSERT OR IGNORE INTO folders (id, name, parent_id)
         VALUES (1, '默认文件夹', NULL)
@@ -246,12 +257,12 @@ def get_prompt(prompt_id):
     return dict(row) if row else None
 
 
-def save_prompt(folder_id, title, content, summary='', image_path=''):
+def save_prompt(folder_id, title, content, summary='', image_path='', model='', sampler='', steps='', cfg='', seed='', negative_content=''):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        'INSERT INTO prompts (folder_id, title, content, summary, image_path) VALUES (?, ?, ?, ?, ?)',
-        (folder_id, title, content, summary, image_path)
+        'INSERT INTO prompts (folder_id, title, content, summary, image_path, model, sampler, steps, cfg, seed, negative_content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (folder_id, title, content, summary, image_path, model, sampler, steps, cfg, seed, negative_content)
     )
     conn.commit()
     prompt_id = cursor.lastrowid
@@ -267,7 +278,7 @@ def delete_prompt(prompt_id):
     conn.close()
 
 
-def update_prompt(prompt_id, title=None, content=None, image_path=None):
+def update_prompt(prompt_id, title=None, content=None, image_path=None, model=None, sampler=None, steps=None, cfg=None, seed=None, negative_content=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -282,6 +293,24 @@ def update_prompt(prompt_id, title=None, content=None, image_path=None):
     if image_path is not None:
         fields.append('image_path = ?')
         values.append(image_path)
+    if model is not None:
+        fields.append('model = ?')
+        values.append(model)
+    if sampler is not None:
+        fields.append('sampler = ?')
+        values.append(sampler)
+    if steps is not None:
+        fields.append('steps = ?')
+        values.append(steps)
+    if cfg is not None:
+        fields.append('cfg = ?')
+        values.append(cfg)
+    if seed is not None:
+        fields.append('seed = ?')
+        values.append(seed)
+    if negative_content is not None:
+        fields.append('negative_content = ?')
+        values.append(negative_content)
 
     if fields:
         values.append(prompt_id)

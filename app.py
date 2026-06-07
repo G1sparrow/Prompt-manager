@@ -160,8 +160,6 @@ def api_folder_prompts(folder_id):
 @app.route('/api/prompts', methods=['POST'])
 def api_save_prompt():
     data = request.get_json()
-    if not data or not data.get('title', '').strip():
-        return jsonify({'error': '请输入提示词标题'}), 400
     if not data.get('content', '').strip():
         return jsonify({'error': '提示词内容不能为空'}), 400
 
@@ -172,14 +170,20 @@ def api_save_prompt():
             title=data['title'].strip(),
             content=data['content'].strip(),
             summary=data.get('summary', '').strip(),
-            image_path=image_path
+            image_path=image_path,
+            model=data.get('model', '').strip(),
+            sampler=data.get('sampler', '').strip(),
+            steps=data.get('steps', '').strip(),
+            cfg=data.get('cfg', '').strip(),
+            seed=data.get('seed', '').strip(),
+            negative_content=data.get('negative_content', '').strip()
         )
         return jsonify({'id': prompt_id, 'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/prompts/<int:prompt_id>', methods=['GET', 'DELETE'])
+@app.route('/api/prompts/<int:prompt_id>', methods=['GET', 'PUT', 'DELETE'])
 def api_prompt(prompt_id):
     if request.method == 'GET':
         prompt = get_prompt(prompt_id)
@@ -187,11 +191,44 @@ def api_prompt(prompt_id):
             return jsonify({'error': '提示词不存在'}), 404
         return jsonify(_normalize_prompt(prompt))
 
+    if request.method == 'PUT':
+        data = request.get_json()
+        try:
+            update_prompt(
+                prompt_id,
+                title=data.get('title'),
+                content=data.get('content'),
+                image_path=data.get('image_path'),
+                model=data.get('model'),
+                sampler=data.get('sampler'),
+                steps=data.get('steps'),
+                cfg=data.get('cfg'),
+                seed=data.get('seed'),
+                negative_content=data.get('negative_content')
+            )
+            return jsonify({'success': True})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     try:
         delete_prompt(prompt_id)
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/upload-image', methods=['POST'])
+def api_upload_image():
+    if 'image' not in request.files:
+        return jsonify({'error': '请上传图片'}), 400
+    file = request.files['image']
+    if not file.filename:
+        return jsonify({'error': '无效的文件'}), 400
+    ext = os.path.splitext(file.filename)[1].lower() or '.png'
+    filename = f'img_{uuid.uuid4().hex[:12]}{ext}'
+    os.makedirs(GENERATED_DIR, exist_ok=True)
+    file.save(os.path.join(GENERATED_DIR, filename))
+    return jsonify({'image_url': f'/static/generated/{filename}'})
 
 
 @app.route('/api/global-prompts', methods=['GET', 'POST'])

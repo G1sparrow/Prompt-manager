@@ -208,13 +208,39 @@
                             <span id="detail-folder"></span>
                             <span id="detail-date"></span>
                         </div>
+                        <div class="detail-params">
+                            <div class="param-row" id="detail-model-area" style="display:none;">
+                                <span class="param-label">模型</span>
+                                <span class="param-value" id="detail-model"></span>
+                            </div>
+                            <div class="param-row" id="detail-sampler-area" style="display:none;">
+                                <span class="param-label">采样方法</span>
+                                <span class="param-value" id="detail-sampler"></span>
+                            </div>
+                            <div class="param-row" id="detail-steps-area" style="display:none;">
+                                <span class="param-label">迭代步数</span>
+                                <span class="param-value" id="detail-steps"></span>
+                            </div>
+                            <div class="param-row" id="detail-cfg-area" style="display:none;">
+                                <span class="param-label">CFG</span>
+                                <span class="param-value" id="detail-cfg"></span>
+                            </div>
+                            <div class="param-row" id="detail-seed-area" style="display:none;">
+                                <span class="param-label">种子</span>
+                                <span class="param-value" id="detail-seed"></span>
+                            </div>
+                        </div>
                         <div class="detail-summary" id="detail-summary-area" style="display:none;">
                             <h4>摘要备注</h4>
                             <p id="detail-summary-text"></p>
                         </div>
                         <div class="detail-content">
-                            <h4>提示词内容</h4>
+                            <h4>正面提示</h4>
                             <pre id="detail-content-text"></pre>
+                        </div>
+                        <div class="detail-content" id="detail-negative-area" style="display:none;">
+                            <h4>负面提示词</h4>
+                            <pre id="detail-negative-text"></pre>
                         </div>
                         <div class="detail-image" id="detail-image-area" style="display:none;">
                             <h4>对应图片</h4>
@@ -275,27 +301,83 @@
     </div>
 
     <div id="save-dialog" class="dialog-overlay" style="display:none;">
-        <div class="dialog">
+        <div class="dialog dialog-save">
             <h3 id="dialog-title-label">保存提示词</h3>
-            <div class="form-group">
-                <label>标题 <span class="required">*</span></label>
-                <input type="text" id="dialog-title" placeholder="给这个提示词起个名字">
-            </div>
-            <div class="form-group">
-                <label>提示词内容 <span class="required">*</span></label>
-                <textarea id="dialog-content" rows="6" placeholder="输入提示词内容..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>图片地址（可选）</label>
-                <input type="text" id="dialog-image-url" placeholder="输入图片 URL 或本地路径">
-            </div>
-            <div class="form-group">
-                <label>保存到文件夹</label>
-                <select id="dialog-folder"></select>
-            </div>
-            <div class="form-group">
-                <label>摘要备注（可选）</label>
-                <textarea id="dialog-summary" rows="3" placeholder="为这个提示词添加一段简短描述或备注..."></textarea>
+            <div class="dialog-columns">
+                <div class="dialog-column-left">
+                    <div class="form-group">
+                        <label>标题</label>
+                        <input type="text" id="dialog-title" placeholder="给这个提示词起个名字">
+                    </div>
+                    <div class="form-group">
+                        <label>模型</label>
+                        <input type="text" id="dialog-model" placeholder="如: sd_xl_base_1.0">
+                    </div>
+                    <div class="form-group">
+                        <label>采样方法</label>
+                        <select id="dialog-sampler">
+                            <option value="">— 选择采样方法 —</option>
+                            <option value="Euler">Euler</option>
+                            <option value="Euler a">Euler a</option>
+                            <option value="DPM++ 2M Karras">DPM++ 2M Karras</option>
+                            <option value="DPM++ 2M SDE Karras">DPM++ 2M SDE Karras</option>
+                            <option value="DPM++ SDE Karras">DPM++ SDE Karras</option>
+                            <option value="DPM++ 2S a Karras">DPM++ 2S a Karras</option>
+                            <option value="LMS">LMS</option>
+                            <option value="LMS Karras">LMS Karras</option>
+                            <option value="DDIM">DDIM</option>
+                            <option value="UniPC">UniPC</option>
+                            <option value="Heun">Heun</option>
+                            <option value="__custom__">✏️ 自定义</option>
+                        </select>
+                        <input type="text" id="dialog-sampler-custom" placeholder="输入自定义采样方法">
+                    </div>
+                    <div class="form-group">
+                        <label>迭代步数</label>
+                        <input type="text" id="dialog-steps" placeholder="如: 30">
+                    </div>
+                    <div class="form-group">
+                        <label>提示词引导系数 (CFG)</label>
+                        <div class="cfg-slider-wrap">
+                            <input type="range" id="dialog-cfg" min="1" max="30" step="0.5" value="7">
+                            <span id="cfg-value">7.0</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>随机种子 (Seed)</label>
+                        <input type="text" id="dialog-seed" placeholder="如: 1234567890">
+                    </div>
+                </div>
+                <div class="dialog-column-right">
+                    <div class="form-group">
+                        <label>正面提示 <span class="required">*</span></label>
+                        <textarea id="dialog-content-positive" rows="6" placeholder="输入正面提示词..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>负面提示词</label>
+                        <textarea id="dialog-content-negative" rows="4" placeholder="输入负面提示词（可选）"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>图片（可选）</label>
+                        <div class="image-upload-area" id="dialog-image-area">
+                            <input type="file" id="dialog-image-file" accept="image/*" hidden>
+                            <div id="dialog-image-placeholder" class="image-placeholder">
+                                <span class="image-placeholder-icon">🖼️</span>
+                                <span>点击选择图片</span>
+                            </div>
+                            <img id="dialog-image-preview" class="image-preview" style="display:none;">
+                            <input type="hidden" id="dialog-image-url">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>保存到文件夹</label>
+                        <select id="dialog-folder"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>摘要备注（可选）</label>
+                        <textarea id="dialog-summary" rows="3" placeholder="为这个提示词添加一段简短描述或备注..."></textarea>
+                    </div>
+                </div>
             </div>
             <div class="dialog-actions">
                 <button class="btn-secondary" id="dialog-cancel">取消</button>

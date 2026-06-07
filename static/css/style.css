@@ -914,6 +914,32 @@ input, textarea, select, button {
     color: var(--text-secondary);
 }
 
+.detail-params {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: var(--concrete-surface);
+    border: 1px solid var(--steel);
+}
+
+.param-row {
+    display: flex;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.param-label {
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.param-value {
+    color: var(--safety-yellow);
+    word-break: break-all;
+}
+
 .detail-content h4 {
     font-family: var(--font-heading);
     font-size: 12px;
@@ -1014,6 +1040,120 @@ input, textarea, select, button {
 
 .form-group input::placeholder {
     color: var(--text-dim);
+}
+
+#dialog-sampler-custom {
+    display: none;
+    margin-top: 8px;
+}
+#dialog-sampler-custom.show {
+    display: block;
+}
+
+.image-upload-area {
+    border: 2px dashed var(--steel);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    border-radius: 2px;
+}
+.image-upload-area:hover {
+    border-color: var(--safety-yellow);
+    background: var(--concrete-hover);
+}
+.image-preview {
+    max-width: 100%;
+    max-height: 160px;
+    display: none;
+    border: 1px solid var(--steel-rim);
+    margin: 0 auto;
+}
+.image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 0;
+    color: var(--text-muted);
+}
+.image-placeholder-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.cfg-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cfg-slider-wrap input[type="range"] {
+    flex: 1;
+    max-width: 300px;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--steel);
+    border-radius: 3px;
+    border: none;
+    outline: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.cfg-slider-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--safety-yellow);
+    border: 2px solid var(--concrete-medium);
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.cfg-slider-wrap input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--safety-yellow);
+    border: 2px solid var(--concrete-medium);
+    cursor: pointer;
+}
+
+.cfg-slider-wrap input[type="range"]:focus {
+    box-shadow: 0 0 0 2px var(--safety-yellow-glow);
+}
+
+#cfg-value {
+    min-width: 36px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--safety-yellow);
+    font-weight: 600;
+}
+
+/* ========== Save Dialog Two-Column ========== */
+.dialog.dialog-save {
+    width: 820px;
+    max-width: 94vw;
+}
+.dialog-columns {
+    display: flex;
+    gap: 28px;
+}
+.dialog-column-left {
+    flex: 1;
+    min-width: 0;
+}
+.dialog-column-right {
+    flex: 1.5;
+    min-width: 0;
+}
+.dialog-column-right .form-group textarea {
+    max-width: none;
 }
 
 .form-hint {

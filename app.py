@@ -109,20 +109,6 @@ def api_inspect():
     if not result:
         return jsonify({'error': '无法从图片中读取到生成参数，这可能不是一张 Stable Diffusion 生成的图片或经过了压缩'}), 400
 
-    saved_path = _normalize_image_path(file.filename)
-    if saved_path and not saved_path.startswith('/'):
-        os.makedirs(GENERATED_DIR, exist_ok=True)
-        try:
-            file.seek(0)
-            new_name = f'img_{uuid.uuid4().hex[:12]}{ext}'
-            file.save(os.path.join(GENERATED_DIR, new_name))
-            result['image_url'] = f'/static/generated/{new_name}'
-        except Exception:
-            pass
-    elif saved_path:
-        result['image_url'] = saved_path
-
-    file.seek(0)
     return jsonify(result)
 
 

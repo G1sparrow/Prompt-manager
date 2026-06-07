@@ -8,6 +8,8 @@ let currentPromptContent = '';
 let currentNegativeContent = '';
 let currentPromptSource = null;
 let editingSdModelId = null;
+let currentInspectFile = null;
+let uploadedFileCache = {};
 let sdModelsCache = null;
 let currentPromptsData = [];
 
@@ -424,6 +426,8 @@ function doInspect(file) {
     };
     reader.readAsDataURL(file);
 
+    currentInspectFile = file;
+
     fetch('/api/inspect', {
         method: 'POST',
         body: formData
@@ -738,10 +742,39 @@ function showSaveDialog(source) {
     document.getElementById('cfg-value').textContent = '7.0';
     document.getElementById('dialog-seed').value = '';
     document.getElementById('dialog-summary').value = '';
-    document.getElementById('dialog-image-url').value = '';
-    document.getElementById('dialog-image-preview').style.display = 'none';
-    document.getElementById('dialog-image-preview').src = '';
-    document.getElementById('dialog-image-placeholder').style.display = 'flex';
+
+    if (source === 'inspect' && currentInspectFile) {
+        var fileKey = currentInspectFile.name + '|' + currentInspectFile.size + '|' + currentInspectFile.lastModified;
+        if (uploadedFileCache[fileKey]) {
+            var cachedUrl = uploadedFileCache[fileKey];
+            document.getElementById('dialog-image-url').value = cachedUrl;
+            var preview = document.getElementById('dialog-image-preview');
+            preview.src = cachedUrl;
+            preview.style.display = 'block';
+            document.getElementById('dialog-image-placeholder').style.display = 'none';
+        } else {
+            var formData = new FormData();
+            formData.append('image', currentInspectFile);
+            fetch('/api/upload-image', { method: 'POST', body: formData })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.image_url) {
+                        uploadedFileCache[fileKey] = data.image_url;
+                        document.getElementById('dialog-image-url').value = data.image_url;
+                        var preview = document.getElementById('dialog-image-preview');
+                        preview.src = data.image_url;
+                        preview.style.display = 'block';
+                        document.getElementById('dialog-image-placeholder').style.display = 'none';
+                    }
+                })
+                .catch(function () {});
+        }
+    } else {
+        document.getElementById('dialog-image-url').value = '';
+        document.getElementById('dialog-image-preview').style.display = 'none';
+        document.getElementById('dialog-image-preview').src = '';
+        document.getElementById('dialog-image-placeholder').style.display = 'flex';
+    }
 
     const posField = document.getElementById('dialog-content-positive');
     const negField = document.getElementById('dialog-content-negative');

@@ -9,6 +9,7 @@ from database import init_db, get_folders, create_folder, delete_folder, \
     update_global_prompt, delete_global_prompt
 from config import load_config, save_config
 from api_handler import expand_prompt, translate_prompt
+from image_inspector import inspect_image as inspect_image_meta
 
 app = Flask(__name__)
 GENERATED_DIR = os.path.join(os.path.dirname(__file__), 'static', 'generated')
@@ -87,6 +88,41 @@ def api_translate():
     result = translate_prompt(data['text'].strip(), data['target_lang'])
     if 'error' in result:
         return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route('/api/inspect', methods=['POST'])
+def api_inspect():
+    if 'image' not in request.files:
+        return jsonify({'error': '请上传图片文件'}), 400
+
+    file = request.files['image']
+    if not file.filename:
+        return jsonify({'error': '无效的文件'}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    allowed = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.avif'}
+    if ext not in allowed:
+        return jsonify({'error': '不支持的图片格式，请使用 PNG/JPEG/WebP'}), 400
+
+    result = inspect_image_meta(file)
+    if not result:
+        return jsonify({'error': '无法从图片中读取到生成参数，这可能不是一张 Stable Diffusion 生成的图片或经过了压缩'}), 400
+
+    saved_path = _normalize_image_path(file.filename)
+    if saved_path and not saved_path.startswith('/'):
+        os.makedirs(GENERATED_DIR, exist_ok=True)
+        try:
+            file.seek(0)
+            new_name = f'img_{uuid.uuid4().hex[:12]}{ext}'
+            file.save(os.path.join(GENERATED_DIR, new_name))
+            result['image_url'] = f'/static/generated/{new_name}'
+        except Exception:
+            pass
+    elif saved_path:
+        result['image_url'] = saved_path
+
+    file.seek(0)
     return jsonify(result)
 
 

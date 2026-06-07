@@ -41,6 +41,27 @@ function initApp() {
     document.getElementById('preset-edit-confirm').addEventListener('click', confirmPresetEdit);
 
     loadGlobalPrompts();
+
+    /* ========== Inspect ========== */
+    const uploadArea = document.getElementById('inspect-upload-area');
+    const fileInput = document.getElementById('inspect-file-input');
+    uploadArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', function () {
+        if (this.files.length > 0) doInspect(this.files[0]);
+    });
+    uploadArea.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+    uploadArea.addEventListener('dragleave', function () {
+        this.classList.remove('drag-over');
+    });
+    uploadArea.addEventListener('drop', function (e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) doInspect(e.dataTransfer.files[0]);
+    });
+    document.getElementById('btn-save-inspect').addEventListener('click', () => showSaveDialog('inspect'));
 }
 
 function switchView(view, folderId) {
@@ -56,6 +77,8 @@ function switchView(view, folderId) {
         document.getElementById('view-expand').classList.add('active');
     } else if (view === 'translate') {
         document.getElementById('view-translate').classList.add('active');
+    } else if (view === 'inspect') {
+        document.getElementById('view-inspect').classList.add('active');
     } else if (view === 'folder') {
         document.getElementById('view-folder').classList.add('active');
         loadPrompts(folderId);
@@ -149,7 +172,7 @@ function loadPrompts(folderId) {
     const title = document.getElementById('folder-view-title');
     const folderEl = document.querySelector(`.folder-item[data-folder-id="${folderId}"]`);
     const folderName = folderEl ? folderEl.querySelector('.folder-name').textContent.trim() : '文件夹';
-    title.textContent = `📁 ${folderName}`;
+    title.textContent = folderName;
 
     fetch(`/api/folders/${folderId}/prompts`)
         .then(r => r.json())
@@ -284,6 +307,76 @@ function doExpand() {
         alert('请求失败: ' + err.message);
     });
 }
+
+/* ========== Inspect ========== */
+function doInspect(file) {
+    const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/bmp', 'image/avif'];
+    if (!allowed.includes(file.type)) {
+        alert('不支持的图片格式，请使用 PNG/JPEG/WebP');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const loading = document.getElementById('inspect-loading');
+    const resultArea = document.getElementById('inspect-result');
+    const errorArea = document.getElementById('inspect-error');
+    const preview = document.getElementById('inspect-preview');
+
+    loading.style.display = 'flex';
+    resultArea.style.display = 'none';
+    errorArea.style.display = 'none';
+    preview.style.display = 'none';
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        document.getElementById('inspect-image').src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+
+    fetch('/api/inspect', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        loading.style.display = 'none';
+        if (data.error) {
+            errorArea.style.display = 'block';
+            document.getElementById('inspect-error-text').textContent = data.error;
+            return;
+        }
+        document.getElementById('inspect-prompt').textContent = data.prompt || '';
+        document.getElementById('inspect-negative').textContent = data.negative_prompt || '(无)';
+        document.getElementById('inspect-params').textContent = data.parameters || '(无)';
+        currentPromptContent = data.prompt || '';
+        currentPromptSource = 'inspect';
+        resultArea.style.display = 'block';
+    })
+    .catch(function (err) {
+        loading.style.display = 'none';
+        errorArea.style.display = 'block';
+        document.getElementById('inspect-error-text').textContent = '请求失败: ' + err.message;
+    });
+}
+
+/* ========== Shared Event Delegation ========== */
+document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (target.classList.contains('btn-inspect-copy')) {
+        var el = document.getElementById(target.dataset.target);
+        if (el) copyText(target.dataset.target);
+    }
+    if (target.classList.contains('btn-inspect-to-expand')) {
+        var el = document.getElementById(target.dataset.target);
+        if (el) {
+            document.getElementById('expand-input').value = el.textContent;
+            switchView('expand');
+        }
+    }
+});
 
 /* ========== Translate ========== */
 function doTranslate() {

@@ -1192,3 +1192,103 @@ input, textarea, select, button {
     background: var(--steel);
     border: 1px solid var(--steel-rim);
 }
+
+/* ========== Inspect ========== */
+.inspect-upload-area {
+    border: 2px dashed var(--steel);
+    background: var(--concrete-medium);
+    padding: 48px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.inspect-upload-area:hover {
+    border-color: var(--steel-light);
+    background: var(--concrete-surface);
+}
+
+.inspect-upload-area.drag-over {
+    border-color: var(--safety-yellow);
+    background: var(--safety-yellow-glow);
+    border-style: solid;
+}
+
+.inspect-upload-placeholder .inspect-upload-icon {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 12px;
+    opacity: 0.4;
+}
+
+.inspect-upload-placeholder p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.inspect-upload-placeholder .inspect-upload-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.inspect-preview {
+    margin-bottom: 16px;
+    text-align: center;
+    background: var(--concrete-medium);
+    border: 2px solid var(--steel);
+    padding: 12px;
+}
+
+.inspect-preview img {
+    max-width: 100%;
+    max-height: 40vh;
+    display: block;
+    margin: 0 auto;
+    border: 1px solid var(--steel);
+}
+
+.inspect-field {
+    border-bottom: 1px solid var(--steel);
+}
+
+.inspect-field:last-child {
+    border-bottom: none;
+}
+
+.inspect-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 18px 0;
+}
+
+.inspect-field-header label {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--safety-yellow);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.inspect-field-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.inspect-field .result-content {
+    padding-top: 8px;
+    padding-bottom: 14px;
+}
+
+.inspect-error {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: rgba(220, 38, 38, 0.1);
+    border: 2px solid var(--warning-red);
+    color: var(--warning-red);
+    font-size: 13px;
+    line-height: 1.6;
+}

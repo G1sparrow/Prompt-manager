@@ -8,3 +8,8 @@ __pycache__/
 flask_error.log
 flask_output.log
 skills-lock.json
+venv/
+*.spec
+dist/
+build/
+AGENTS.md

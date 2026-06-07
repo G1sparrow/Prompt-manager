@@ -25,6 +25,10 @@
                         <span class="nav-icon">🌐</span>
                         <span>翻译</span>
                     </div>
+                    <div class="nav-item" data-view="inspect">
+                        <span class="nav-icon">🔍</span>
+                        <span>解析</span>
+                    </div>
                 </nav>
 
                 <div class="sidebar-divider"></div>
@@ -121,6 +125,65 @@
                     <div id="translate-loading" class="loading-indicator" style="display:none;">
                         <div class="spinner"></div>
                         <span>正在翻译中...</span>
+                    </div>
+                </div>
+
+                <div id="view-inspect" class="content-view">
+                    <h2>🔍 提示词解析</h2>
+                    <p class="view-desc">从 Stable Diffusion 生成的图片中读取提示词和生成参数</p>
+                    <div class="inspect-upload-area" id="inspect-upload-area">
+                        <div class="inspect-upload-placeholder">
+                            <span class="inspect-upload-icon">🖼️</span>
+                            <p>拖动图片到此处或点击选择文件</p>
+                            <p class="inspect-upload-hint">支持 PNG / JPEG / WebP</p>
+                        </div>
+                        <input type="file" id="inspect-file-input" accept="image/png,image/jpeg,image/webp" hidden>
+                    </div>
+                    <div id="inspect-preview" class="inspect-preview" style="display:none;">
+                        <img id="inspect-image" src="" alt="preview">
+                    </div>
+                    <div id="inspect-loading" class="loading-indicator" style="display:none;">
+                        <div class="spinner"></div>
+                        <span>正在解析图片...</span>
+                    </div>
+                    <div id="inspect-error" class="inspect-error" style="display:none;">
+                        <span id="inspect-error-text"></span>
+                    </div>
+                    <div id="inspect-result" class="result-area" style="display:none;">
+                        <div class="result-header">
+                            <h3>提取结果</h3>
+                        </div>
+                        <div class="inspect-field">
+                            <div class="inspect-field-header">
+                                <label>提示词</label>
+                                <div class="inspect-field-actions">
+                                    <button class="btn-small btn-inspect-copy" data-target="inspect-prompt">📋 复制</button>
+                                    <button class="btn-small btn-inspect-to-expand" data-target="inspect-prompt">📝 添加</button>
+                                </div>
+                            </div>
+                            <pre id="inspect-prompt" class="result-content"></pre>
+                        </div>
+                        <div class="inspect-field">
+                            <div class="inspect-field-header">
+                                <label>负面提示词</label>
+                                <div class="inspect-field-actions">
+                                    <button class="btn-small btn-inspect-copy" data-target="inspect-negative">📋 复制</button>
+                                </div>
+                            </div>
+                            <pre id="inspect-negative" class="result-content"></pre>
+                        </div>
+                        <div class="inspect-field">
+                            <div class="inspect-field-header">
+                                <label>其他参数</label>
+                                <div class="inspect-field-actions">
+                                    <button class="btn-small btn-inspect-copy" data-target="inspect-params">📋 复制</button>
+                                </div>
+                            </div>
+                            <pre id="inspect-params" class="result-content"></pre>
+                        </div>
+                        <div class="action-row">
+                            <button class="btn-secondary" id="btn-save-inspect">💾 保存到文件夹</button>
+                        </div>
                     </div>
                 </div>
 

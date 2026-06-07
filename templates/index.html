@@ -44,6 +44,13 @@
 
                 <div class="sidebar-divider"></div>
 
+                <div class="nav-item" data-view="sd-models">
+                    <span class="nav-icon">🎨</span>
+                    <span>模型管理</span>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
                 <div class="nav-item" data-view="settings">
                     <span class="nav-icon">⚙️</span>
                     <span>设置</span>
@@ -190,6 +197,12 @@
                 <div id="view-folder" class="content-view">
                     <div class="folder-toolbar">
                         <h2 id="folder-view-title">📁 文件夹</h2>
+                        <div class="folder-filter">
+                            <label>模型筛选：</label>
+                            <select id="folder-model-filter">
+                                <option value="">全部模型</option>
+                            </select>
+                        </div>
                         <button class="btn-small" id="btn-new-prompt">✏️ 新建提示词</button>
                     </div>
                     <div id="folder-prompts-grid">
@@ -253,6 +266,19 @@
                     </div>
                 </div>
 
+                <div id="view-sd-models" class="content-view">
+                    <div class="folder-toolbar">
+                        <h2>🎨 SD 模型管理</h2>
+                        <button class="btn-small" id="btn-add-sd-model">➕ 新增模型</button>
+                    </div>
+                    <div id="sd-models-grid">
+                    </div>
+                    <div id="sd-models-empty" class="empty-state">
+                        <p>还没有添加任何 SD 模型</p>
+                        <p class="hint">点击右上角"新增模型"开始添加</p>
+                    </div>
+                </div>
+
                 <div id="view-settings" class="content-view">
                     <h2>⚙️ 设置</h2>
                     <div class="settings-section">
@@ -311,7 +337,11 @@
                     </div>
                     <div class="form-group">
                         <label>模型</label>
-                        <input type="text" id="dialog-model" placeholder="如: sd_xl_base_1.0">
+                        <select id="dialog-model">
+                            <option value="">— 选择模型 —</option>
+                            <option value="__custom__">✏️ 自定义</option>
+                        </select>
+                        <input type="text" id="dialog-model-custom" placeholder="输入自定义模型名称">
                     </div>
                     <div class="form-group">
                         <label>采样方法</label>
@@ -394,6 +424,42 @@
             <div class="dialog-actions">
                 <button class="btn-secondary" id="btn-add-preset">➕ 新建预设</button>
                 <button class="btn-primary" id="btn-close-presets">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sd-model-dialog" class="dialog-overlay" style="display:none;">
+        <div class="dialog">
+            <h3 id="sd-model-dialog-title">新增 SD 模型</h3>
+            <div class="form-group">
+                <label>模型名称 <span class="required">*</span></label>
+                <input type="text" id="sd-model-name" placeholder="如: sd_xl_base_1.0">
+            </div>
+            <div class="sd-model-param-grid">
+                <div class="form-group">
+                    <label>采样方法</label>
+                    <input type="text" id="sd-model-sampler" placeholder="如: DPM++ 2M Karras">
+                </div>
+                <div class="form-group">
+                    <label>CFG</label>
+                    <input type="text" id="sd-model-cfg" placeholder="如: 7">
+                </div>
+                <div class="form-group">
+                    <label>VAE</label>
+                    <input type="text" id="sd-model-vae" placeholder="如: sdxl_vae.safetensors">
+                </div>
+                <div class="form-group">
+                    <label>Text Encoder</label>
+                    <input type="text" id="sd-model-text-encoder" placeholder="如: clip_l">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>模型说明</label>
+                <textarea id="sd-model-desc" rows="3" placeholder="模型的简要说明..."></textarea>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-secondary" id="sd-model-dialog-cancel">取消</button>
+                <button class="btn-primary" id="sd-model-dialog-confirm">保存</button>
             </div>
         </div>
     </div>

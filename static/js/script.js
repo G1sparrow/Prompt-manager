@@ -7,6 +7,9 @@ let currentFolderId = null;
 let currentPromptContent = '';
 let currentNegativeContent = '';
 let currentPromptSource = null;
+let editingSdModelId = null;
+let sdModelsCache = null;
+let currentPromptsData = [];
 
 function initApp() {
     loadFolders();
@@ -42,6 +45,19 @@ document.getElementById('dialog-sampler').addEventListener('change', function() 
         customInput.value = '';
     }
 });
+document.getElementById('dialog-model').addEventListener('change', function() {
+    const customInput = document.getElementById('dialog-model-custom');
+    if (this.value === '__custom__') {
+        customInput.classList.add('show');
+        customInput.focus();
+    } else {
+        customInput.classList.remove('show');
+        customInput.value = '';
+    }
+});
+document.getElementById('folder-model-filter').addEventListener('change', function() {
+    renderPromptCards();
+});
 document.getElementById('btn-new-prompt').addEventListener('click', () => showSaveDialog('new'));
     document.getElementById('btn-add-expand').addEventListener('click', () => showSaveDialog('expand'));
     document.getElementById('btn-add-translate').addEventListener('click', () => showSaveDialog('translate'));
@@ -53,6 +69,10 @@ document.getElementById('btn-new-prompt').addEventListener('click', () => showSa
     document.getElementById('btn-add-preset').addEventListener('click', () => showPresetEditor(null));
     document.getElementById('preset-edit-cancel').addEventListener('click', hidePresetEditor);
     document.getElementById('preset-edit-confirm').addEventListener('click', confirmPresetEdit);
+
+    document.getElementById('btn-add-sd-model').addEventListener('click', () => showSdModelDialog(null));
+    document.getElementById('sd-model-dialog-cancel').addEventListener('click', hideSdModelDialog);
+    document.getElementById('sd-model-dialog-confirm').addEventListener('click', confirmSdModel);
 
     loadGlobalPrompts();
 
@@ -104,6 +124,9 @@ function switchView(view, folderId) {
     } else if (view === 'folder') {
         document.getElementById('view-folder').classList.add('active');
         loadPrompts(folderId);
+    } else if (view === 'sd-models') {
+        document.getElementById('view-sd-models').classList.add('active');
+        loadSdModels();
     } else if (view === 'settings') {
         document.getElementById('view-settings').classList.add('active');
         loadConfig();
@@ -188,6 +211,56 @@ function deleteFolder(event, folderId) {
 }
 
 /* ========== Prompts ========== */
+function renderPromptCards(filterModel) {
+    const grid = document.getElementById('folder-prompts-grid');
+    const empty = document.getElementById('folder-empty');
+
+    if (filterModel === undefined) {
+        filterModel = document.getElementById('folder-model-filter').value;
+    }
+
+    const filtered = filterModel
+        ? currentPromptsData.filter(p => p.model === filterModel)
+        : currentPromptsData;
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+
+    empty.style.display = 'none';
+    grid.innerHTML = '';
+    filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'prompt-card';
+        const date = new Date(p.created_at).toLocaleString('zh-CN');
+
+        if (p.image_path) {
+            card.innerHTML = `
+                <div class="card-image-wrap">
+                    <img src="${escapeHtml(p.image_path)}" alt="${escapeHtml(p.title)}" loading="lazy">
+                </div>
+                <div class="card-info">
+                    <h4>${escapeHtml(p.title)}</h4>
+                    <div class="card-meta">${p.model ? escapeHtml(p.model) : date}</div>
+                </div>
+            `;
+        } else {
+            card.innerHTML = `
+                <div class="card-no-image">
+                    <span class="card-icon">📝</span>
+                    <h4>${escapeHtml(p.title)}</h4>
+                    <div class="card-meta">${p.model ? escapeHtml(p.model) : date}</div>
+                </div>
+            `;
+        }
+
+        card.addEventListener('click', () => showPromptDetail(p.id));
+        grid.appendChild(card);
+    });
+}
+
 function loadPrompts(folderId) {
     if (!folderId) return;
 
@@ -196,48 +269,13 @@ function loadPrompts(folderId) {
     const folderName = folderEl ? folderEl.querySelector('.folder-name').textContent.trim() : '文件夹';
     title.textContent = folderName;
 
+    document.getElementById('folder-model-filter').value = '';
+
     fetch(`/api/folders/${folderId}/prompts`)
         .then(r => r.json())
         .then(data => {
-            const grid = document.getElementById('folder-prompts-grid');
-            const empty = document.getElementById('folder-empty');
-
-            if (data.length === 0) {
-                grid.innerHTML = '';
-                empty.style.display = 'block';
-                return;
-            }
-
-            empty.style.display = 'none';
-            grid.innerHTML = '';
-            data.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'prompt-card';
-                const date = new Date(p.created_at).toLocaleString('zh-CN');
-
-                if (p.image_path) {
-                    card.innerHTML = `
-                        <div class="card-image-wrap">
-                            <img src="${escapeHtml(p.image_path)}" alt="${escapeHtml(p.title)}" loading="lazy">
-                        </div>
-                        <div class="card-info">
-                            <h4>${escapeHtml(p.title)}</h4>
-                            <div class="card-meta">${date}</div>
-                        </div>
-                    `;
-                } else {
-                    card.innerHTML = `
-                        <div class="card-no-image">
-                            <span class="card-icon">📝</span>
-                            <h4>${escapeHtml(p.title)}</h4>
-                            <div class="card-meta">${date}</div>
-                        </div>
-                    `;
-                }
-
-                card.addEventListener('click', () => showPromptDetail(p.id));
-                grid.appendChild(card);
-            });
+            currentPromptsData = data;
+            renderPromptCards('');
         });
 }
 
@@ -413,6 +451,16 @@ function doInspect(file) {
     });
 }
 
+/* ========== SD Model Card Actions ========== */
+document.addEventListener('click', function (e) {
+    var target = e.target.closest('button');
+    if (!target) return;
+    var action = target.dataset.action;
+    var modelId = target.dataset.id;
+    if (action === 'edit' && modelId) showSdModelDialog(parseInt(modelId));
+    if (action === 'delete' && modelId) deleteSdModel(parseInt(modelId));
+});
+
 /* ========== Shared Event Delegation ========== */
 document.addEventListener('click', function (e) {
     var target = e.target;
@@ -470,11 +518,217 @@ function doTranslate() {
     });
 }
 
+/* ========== SD Model Management ========== */
+function populateSdModelSelects() {
+    const modelSelect = document.getElementById('dialog-model');
+    const filterSelect = document.getElementById('folder-model-filter');
+    if (!modelSelect) return;
+
+    const currentModel = modelSelect.value;
+    const currentFilter = filterSelect ? filterSelect.value : '';
+
+    modelSelect.innerHTML = '<option value="">— 选择模型 —</option>';
+    if (filterSelect) {
+        filterSelect.innerHTML = '<option value="">全部模型</option>';
+    }
+
+    if (sdModelsCache) {
+        sdModelsCache.forEach(m => {
+            const opt1 = document.createElement('option');
+            opt1.value = m.name;
+            opt1.textContent = m.name;
+            modelSelect.appendChild(opt1);
+
+            if (filterSelect) {
+                const opt2 = document.createElement('option');
+                opt2.value = m.name;
+                opt2.textContent = m.name;
+                filterSelect.appendChild(opt2);
+            }
+        });
+    }
+
+    const customOpt = document.createElement('option');
+    customOpt.value = '__custom__';
+    customOpt.textContent = '✏️ 自定义';
+    modelSelect.appendChild(customOpt);
+
+    if (currentModel && [...modelSelect.options].some(o => o.value === currentModel)) {
+        modelSelect.value = currentModel;
+    }
+
+    const customInput = document.getElementById('dialog-model-custom');
+    if (modelSelect.value === '__custom__') {
+        customInput.classList.add('show');
+    } else {
+        customInput.classList.remove('show');
+        customInput.value = '';
+    }
+
+    if (filterSelect && currentFilter && [...filterSelect.options].some(o => o.value === currentFilter)) {
+        filterSelect.value = currentFilter;
+    }
+}
+
+function loadSdModels() {
+    fetch('/api/sd-models')
+        .then(r => r.json())
+        .then(data => {
+            sdModelsCache = data;
+            populateSdModelSelects();
+            const grid = document.getElementById('sd-models-grid');
+            const empty = document.getElementById('sd-models-empty');
+
+            if (data.length === 0) {
+                grid.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+
+            empty.style.display = 'none';
+            grid.innerHTML = '';
+            data.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'sd-model-card';
+                let paramsHtml = '';
+                const paramFields = [
+                    { label: '采样方法', val: m.sampler },
+                    { label: 'CFG', val: m.cfg },
+                    { label: 'VAE', val: m.vae },
+                    { label: 'Text Encoder', val: m.text_encoder }
+                ];
+                paramFields.forEach(p => {
+                    if (p.val) {
+                        paramsHtml += `<div class="sd-param-row"><span class="sd-param-key">${p.label}</span><span class="sd-param-val">${escapeHtml(p.val)}</span></div>`;
+                    }
+                });
+                if (paramsHtml) {
+                    paramsHtml = `<div class="sd-model-params">${paramsHtml}</div>`;
+                }
+                let descHtml = '';
+                if (m.description) {
+                    descHtml = `<div class="sd-model-desc">${escapeHtml(m.description)}</div>`;
+                }
+                card.innerHTML = `
+                    <div class="sd-model-card-header">
+                        <h4>${escapeHtml(m.name)}</h4>
+                    </div>
+                    ${paramsHtml}
+                    ${descHtml}
+                    <div class="sd-model-actions">
+                        <button class="btn-small" data-action="edit" data-id="${m.id}">✏️ 编辑</button>
+                        <button class="btn-small" data-action="delete" data-id="${m.id}">🗑️ 删除</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        });
+}
+
+function showSdModelDialog(modelId) {
+    editingSdModelId = modelId;
+    document.getElementById('sd-model-name').value = '';
+    document.getElementById('sd-model-sampler').value = '';
+    document.getElementById('sd-model-cfg').value = '';
+    document.getElementById('sd-model-vae').value = '';
+    document.getElementById('sd-model-text-encoder').value = '';
+    document.getElementById('sd-model-desc').value = '';
+
+    if (modelId) {
+        document.getElementById('sd-model-dialog-title').textContent = '编辑 SD 模型';
+        fetch('/api/sd-models')
+            .then(r => r.json())
+            .then(models => {
+                const m = models.find(x => x.id === modelId);
+                if (m) {
+                    document.getElementById('sd-model-name').value = m.name;
+                    document.getElementById('sd-model-sampler').value = m.sampler || '';
+                    document.getElementById('sd-model-cfg').value = m.cfg || '';
+                    document.getElementById('sd-model-vae').value = m.vae || '';
+                    document.getElementById('sd-model-text-encoder').value = m.text_encoder || '';
+                    document.getElementById('sd-model-desc').value = m.description || '';
+                }
+            });
+    } else {
+        document.getElementById('sd-model-dialog-title').textContent = '新增 SD 模型';
+    }
+
+    document.getElementById('sd-model-dialog').style.display = 'flex';
+}
+
+function hideSdModelDialog() {
+    document.getElementById('sd-model-dialog').style.display = 'none';
+    editingSdModelId = null;
+}
+
+function confirmSdModel() {
+    const name = document.getElementById('sd-model-name').value.trim();
+    const sampler = document.getElementById('sd-model-sampler').value.trim();
+    const cfg = document.getElementById('sd-model-cfg').value.trim();
+    const vae = document.getElementById('sd-model-vae').value.trim();
+    const textEncoder = document.getElementById('sd-model-text-encoder').value.trim();
+    const desc = document.getElementById('sd-model-desc').value.trim();
+
+    if (!name) {
+        alert('请输入模型名称');
+        return;
+    }
+
+    const body = { name, sampler, cfg, vae, text_encoder: textEncoder, description: desc };
+
+    if (editingSdModelId) {
+        fetch(`/api/sd-models/${editingSdModelId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                hideSdModelDialog();
+                loadSdModels();
+            }
+        });
+    } else {
+        fetch('/api/sd-models', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                hideSdModelDialog();
+                loadSdModels();
+            }
+        });
+    }
+}
+
+function deleteSdModel(modelId) {
+    if (!confirm('确定要删除这个模型吗？')) return;
+    fetch(`/api/sd-models/${modelId}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                loadSdModels();
+            }
+        });
+}
+
 /* ========== Save Dialog ========== */
 function showSaveDialog(source) {
     currentPromptSource = source;
     document.getElementById('dialog-title').value = '';
     document.getElementById('dialog-model').value = '';
+    document.getElementById('dialog-model-custom').value = '';
+    document.getElementById('dialog-model-custom').classList.remove('show');
     document.getElementById('dialog-sampler').value = '';
     const customSampler = document.getElementById('dialog-sampler-custom');
     customSampler.classList.remove('show');
@@ -551,7 +805,10 @@ function confirmSave() {
     const negContent = document.getElementById('dialog-content-negative').value.trim();
     const summary = document.getElementById('dialog-summary').value.trim();
     const imageUrl = document.getElementById('dialog-image-url').value.trim();
-    const model = document.getElementById('dialog-model').value.trim();
+    const modelSelect = document.getElementById('dialog-model');
+    const model = modelSelect.value === '__custom__'
+        ? document.getElementById('dialog-model-custom').value.trim()
+        : modelSelect.value.trim();
     const samplerSelect = document.getElementById('dialog-sampler');
     const sampler = samplerSelect.value === '__custom__'
         ? document.getElementById('dialog-sampler-custom').value.trim()

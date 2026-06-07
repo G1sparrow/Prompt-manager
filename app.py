@@ -126,6 +126,69 @@ def api_inspect():
     return jsonify(result)
 
 
+@app.route('/api/sd-models', methods=['GET', 'POST'])
+def api_sd_models():
+    if request.method == 'GET':
+        cfg = load_config()
+        return jsonify(cfg.get('sd_models', []))
+
+    data = request.get_json()
+    if not data or not data.get('name', '').strip():
+        return jsonify({'error': '请输入模型名称'}), 400
+
+    cfg = load_config()
+    models = cfg.get('sd_models', [])
+    new_id = max([m.get('id', 0) for m in models], default=0) + 1
+    models.append({
+        'id': new_id,
+        'name': data['name'].strip(),
+        'sampler': data.get('sampler', '').strip(),
+        'cfg': data.get('cfg', '').strip(),
+        'vae': data.get('vae', '').strip(),
+        'text_encoder': data.get('text_encoder', '').strip(),
+        'description': data.get('description', '').strip()
+    })
+    cfg['sd_models'] = models
+    save_config(cfg)
+    return jsonify(models), 201
+
+
+@app.route('/api/sd-models/<int:model_id>', methods=['PUT', 'DELETE'])
+def api_sd_model(model_id):
+    cfg = load_config()
+    models = cfg.get('sd_models', [])
+
+    idx = None
+    for i, m in enumerate(models):
+        if m.get('id') == model_id:
+            idx = i
+            break
+
+    if idx is None:
+        return jsonify({'error': '模型不存在'}), 404
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        if data.get('name', '').strip():
+            models[idx]['name'] = data['name'].strip()
+        if 'sampler' in data:
+            models[idx]['sampler'] = data['sampler'].strip()
+        if 'cfg' in data:
+            models[idx]['cfg'] = data['cfg'].strip()
+        if 'vae' in data:
+            models[idx]['vae'] = data['vae'].strip()
+        if 'text_encoder' in data:
+            models[idx]['text_encoder'] = data['text_encoder'].strip()
+        if 'description' in data:
+            models[idx]['description'] = data['description'].strip()
+    else:
+        models.pop(idx)
+
+    cfg['sd_models'] = models
+    save_config(cfg)
+    return jsonify(models)
+
+
 @app.route('/api/folders', methods=['GET', 'POST'])
 def api_folders():
     if request.method == 'GET':

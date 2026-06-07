@@ -678,10 +678,19 @@ input, textarea, select, button {
 
 /* ========== Folder View ========== */
 #folder-prompts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
+    column-count: 4;
+    column-gap: 14px;
     margin-top: 16px;
+}
+
+@media (max-width: 1200px) {
+    #folder-prompts-grid { column-count: 3; }
+}
+@media (max-width: 900px) {
+    #folder-prompts-grid { column-count: 2; }
+}
+@media (max-width: 600px) {
+    #folder-prompts-grid { column-count: 1; }
 }
 
 .folder-toolbar {
@@ -702,6 +711,8 @@ input, textarea, select, button {
     overflow: hidden;
     transition: border-color 0.15s, box-shadow 0.15s;
     box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    break-inside: avoid;
+    margin-bottom: 14px;
 }
 
 .prompt-card:hover {
@@ -794,6 +805,107 @@ input, textarea, select, button {
 
 .prompt-card .card-no-image .card-meta {
     margin-top: 2px;
+}
+
+/* ========== SD Model Cards ========== */
+#sd-models-grid {
+    column-count: 4;
+    column-gap: 14px;
+    margin-top: 16px;
+}
+
+@media (max-width: 1200px) {
+    #sd-models-grid { column-count: 3; }
+}
+@media (max-width: 900px) {
+    #sd-models-grid { column-count: 2; }
+}
+@media (max-width: 600px) {
+    #sd-models-grid { column-count: 1; }
+}
+
+.sd-model-card {
+    background: var(--concrete-medium);
+    border: 2px solid var(--steel);
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    break-inside: avoid;
+    margin-bottom: 14px;
+}
+
+.sd-model-card:hover {
+    border-color: var(--safety-yellow);
+    box-shadow: 2px 2px 0 var(--safety-yellow-glow);
+}
+
+.sd-model-card-header {
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid var(--steel);
+    position: relative;
+}
+
+.sd-model-card-header h4 {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--safety-yellow);
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.sd-model-params {
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sd-param-row {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.8;
+}
+.sd-param-key {
+    font-family: var(--font-heading);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+.sd-param-val {
+    color: var(--text-secondary);
+    word-break: break-all;
+}
+
+.sd-model-desc {
+    padding: 0 16px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.sd-model-actions {
+    padding: 12px 16px;
+    border-top: 1px solid var(--steel);
+    display: flex;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.sd-model-actions .btn-small {
+    padding: 4px 10px;
+    font-size: 10px;
 }
 
 /* ========== Detail ========== */
@@ -1050,6 +1162,44 @@ input, textarea, select, button {
     display: block;
 }
 
+#dialog-model-custom {
+    display: none;
+    margin-top: 8px;
+}
+#dialog-model-custom.show {
+    display: block;
+}
+
+.folder-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 20px;
+}
+.folder-filter label {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+.folder-filter select {
+    padding: 5px 10px;
+    background: var(--concrete-surface);
+    border: 2px solid var(--steel);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: border-color 0.15s;
+    max-width: 180px;
+}
+.folder-filter select:focus {
+    outline: none;
+    border-color: var(--safety-yellow);
+}
+
 .image-upload-area {
     border: 2px dashed var(--steel);
     padding: 16px;
@@ -1279,6 +1429,16 @@ input, textarea, select, button {
 
 /* Bottom-left rivet via a div or something... 
    I'll use a background pattern approach for a subtle "rivet" feel across dialog */
+
+.sd-model-param-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.sd-model-param-grid .form-group {
+    margin-bottom: 0;
+}
 .dialog-actions {
     display: flex;
     justify-content: flex-end;

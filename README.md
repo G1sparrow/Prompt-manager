@@ -1,6 +1,6 @@
 # PromptManager - 文生图提示词管理工具
 
-一个面向 AI 绘画创作者的提示词管理工具，支持提示词扩写、多语言翻译、PNG 图片反推和文件夹分类管理。
+一个面向 AI 绘画创作者的提示词管理工具，支持提示词扩写、多语言翻译、PNG 图片反推、SD 模型管理和文件夹分类管理。
 
 ## 功能
 
@@ -11,13 +11,19 @@
 集成百度翻译 API，支持 8 种语言的提示词互译：中文、英语、日语、韩语、法语、德语、俄语、西班牙语。
 
 ### 🔍 PNG 图片反推
-上传 Stable Diffusion WebUI 或 ComfyUI 生成的 PNG/JPEG/WebP 图片，自动提取其中的提示词、反向提示词和生成参数。支持一键将提取的提示词发送到扩写功能。
+上传 Stable Diffusion WebUI 或 ComfyUI 生成的 PNG/JPEG/WebP 图片，自动提取其中的提示词、反向提示词和生成参数（采样器、步数、CFG、种子等）。支持一键将提取的提示词发送到扩写功能。
 
 ### 📁 文件夹管理
-树形文件夹结构管理提示词，支持新建/删除文件夹，卡片视图展示（含封面图或图标），支持从文件夹直接新建提示词。
+树形文件夹结构管理提示词，支持新建/删除文件夹，卡片瀑布流展示（含封面图或图标 + 模型名称），支持按模型筛选和从文件夹直接新建提示词。
 
 ### 🎨 扩写风格预设
 内置 5 种扩写风格（通用扩写、写实摄影风、二次元/动漫风、概念艺术风、极简/扁平风），支持自建预设，使用 `{user_input}` 占位符模板。
+
+### 🗃️ SD 模型管理
+管理 Stable Diffusion 模型列表，支持模型名称、推荐参数（采样器/CFG/VAE/Text Encoder）和说明，以卡片瀑布流展示。新建提示词时可通过下拉菜单选择已保存的模型。
+
+### 🏷️ 提示词元数据
+每个提示词可保存模型、采样方法、迭代步数、CFG 和随机种子等生成参数，在详情页查看。
 
 ### ⚙️ 可配置设置
 - LLM API：自定义 API 地址、Key、模型（支持 13 个预设模型 + 自定义输入）
@@ -31,9 +37,10 @@
 | 数据库 | SQLite |
 | 前端 | 原生 HTML / CSS / JS（单页面应用） |
 | 样式 | Oswald + IBM Plex Mono / 工业基建主题 |
-| 图片反推 | Pillow（PNG tEXt / JPEG-EXIF） |
+| 图片反推 | Pillow（PNG tEXt / JPEG-EXIF / ComfyUI JSON） |
 | 翻译 | 百度翻译 API |
 | 扩写 | OpenAI 兼容 API（任意供应商） |
+| 存储 | config.json（API Key + SD 模型列表） |
 
 ## 快速开始
 
@@ -78,7 +85,7 @@ promptmanager/
 ├── database.py             # SQLite 数据库模型
 ├── api_handler.py          # LLM 扩写 & 百度翻译 API 封装
 ├── image_inspector.py      # PNG/JPEG 图片元数据解析（支持 SD-WebUI & ComfyUI）
-├── config.json             # 运行时配置文件（自动生成）
+├── config.json             # 运行时配置文件（API Key、SD 模型列表等）
 ├── prompts.db              # SQLite 数据库（自动生成）
 ├── static/
 │   ├── css/style.css       # 工业基建主题样式

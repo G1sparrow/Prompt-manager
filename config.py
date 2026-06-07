@@ -28,7 +28,8 @@ DEFAULT_CONFIG = {
     'baidu_translate': {
         'appid': '',
         'secret_key': ''
-    }
+    },
+    'sd_models': []
 }
 
 

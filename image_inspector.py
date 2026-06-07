@@ -86,8 +86,10 @@ def _parse_comfyui(prompt_json_str):
             title_lower = title.lower()
             if 'negative' in title_lower:
                 negative_text = text
-            else:
+            elif not positive_text:
                 positive_text = text
+            else:
+                negative_text = text
 
         # KSampler / Sampler nodes hold generation parameters
         if ct in ('KSampler', 'KSamplerAdvanced', 'SamplerCustom'):

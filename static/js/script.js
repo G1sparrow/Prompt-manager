@@ -9,7 +9,6 @@ let currentNegativeContent = '';
 let currentPromptSource = null;
 let editingSdModelId = null;
 let currentInspectFile = null;
-let uploadedFileCache = {};
 let sdModelsCache = null;
 let currentPromptsData = [];
 
@@ -442,6 +441,12 @@ function doInspect(file) {
         }
         document.getElementById('inspect-prompt').textContent = data.prompt || '';
         document.getElementById('inspect-negative').textContent = data.negative_prompt || '(无)';
+        if (data.model_name) {
+            document.getElementById('inspect-model').textContent = data.model_name;
+            document.getElementById('inspect-model-area').style.display = '';
+        } else {
+            document.getElementById('inspect-model-area').style.display = 'none';
+        }
         document.getElementById('inspect-params').textContent = data.parameters || '(无)';
         currentPromptContent = data.prompt || '';
         currentNegativeContent = data.negative_prompt || '';
@@ -727,7 +732,17 @@ function deleteSdModel(modelId) {
 }
 
 /* ========== Save Dialog ========== */
+function loadSdModelsOnce() {
+    if (!sdModelsCache) {
+        fetch('/api/sd-models').then(function (r) { return r.json(); }).then(function (data) {
+            sdModelsCache = data;
+            populateSdModelSelects();
+        });
+    }
+}
+
 function showSaveDialog(source) {
+    loadSdModelsOnce();
     currentPromptSource = source;
     document.getElementById('dialog-title').value = '';
     document.getElementById('dialog-model').value = '';
@@ -744,22 +759,14 @@ function showSaveDialog(source) {
     document.getElementById('dialog-summary').value = '';
 
     if (source === 'inspect' && currentInspectFile) {
-        var fileKey = currentInspectFile.name + '|' + currentInspectFile.size + '|' + currentInspectFile.lastModified;
-        if (uploadedFileCache[fileKey]) {
-            var cachedUrl = uploadedFileCache[fileKey];
-            document.getElementById('dialog-image-url').value = cachedUrl;
-            var preview = document.getElementById('dialog-image-preview');
-            preview.src = cachedUrl;
-            preview.style.display = 'block';
-            document.getElementById('dialog-image-placeholder').style.display = 'none';
-        } else {
+        computeFileHash(currentInspectFile).then(function (fileHash) {
             var formData = new FormData();
             formData.append('image', currentInspectFile);
+            formData.append('hash', fileHash);
             fetch('/api/upload-image', { method: 'POST', body: formData })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.image_url) {
-                        uploadedFileCache[fileKey] = data.image_url;
                         document.getElementById('dialog-image-url').value = data.image_url;
                         var preview = document.getElementById('dialog-image-preview');
                         preview.src = data.image_url;
@@ -768,7 +775,7 @@ function showSaveDialog(source) {
                     }
                 })
                 .catch(function () {});
-        }
+        });
     } else {
         document.getElementById('dialog-image-url').value = '';
         document.getElementById('dialog-image-preview').style.display = 'none';
@@ -1190,4 +1197,11 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function computeFileHash(file) {
+    return crypto.subtle.digest('SHA-256', file).then(function (hashBuf) {
+        var hashArr = Array.from(new Uint8Array(hashBuf));
+        return hashArr.map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    });
 }

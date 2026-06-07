@@ -1,4 +1,6 @@
 import os
+import hashlib
+import json
 import shutil
 import uuid
 from flask import Flask, jsonify, request, render_template
@@ -31,8 +33,8 @@ def _normalize_image_path(image_path):
             shutil.copy2(path, os.path.join(GENERATED_DIR, filename))
             return f'/static/generated/{filename}'
         except Exception:
-            return path
-    return path
+            return ''
+    return ''
 
 
 def _normalize_prompt(p):
@@ -101,8 +103,7 @@ def api_inspect():
         return jsonify({'error': '无效的文件'}), 400
 
     ext = os.path.splitext(file.filename)[1].lower()
-    allowed = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.avif'}
-    if ext not in allowed:
+    if ext not in ALLOWED_EXT:
         return jsonify({'error': '不支持的图片格式，请使用 PNG/JPEG/WebP'}), 400
 
     result = inspect_image_meta(file)
@@ -253,7 +254,8 @@ def api_prompt(prompt_id):
                 steps=data.get('steps'),
                 cfg=data.get('cfg'),
                 seed=data.get('seed'),
-                negative_content=data.get('negative_content')
+                negative_content=data.get('negative_content'),
+                summary=data.get('summary')
             )
             return jsonify({'success': True})
         except Exception as e:
@@ -266,6 +268,26 @@ def api_prompt(prompt_id):
         return jsonify({'error': str(e)}), 500
 
 
+ALLOWED_EXT = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.avif'}
+MAX_IMAGE_SIZE = 20 * 1024 * 1024
+HASH_INDEX_PATH = os.path.join(GENERATED_DIR, 'hash_index.json')
+
+
+def _load_hash_index():
+    if os.path.exists(HASH_INDEX_PATH):
+        try:
+            with open(HASH_INDEX_PATH, 'r') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def _save_hash_index(index):
+    with open(HASH_INDEX_PATH, 'w') as f:
+        json.dump(index, f)
+
+
 @app.route('/api/upload-image', methods=['POST'])
 def api_upload_image():
     if 'image' not in request.files:
@@ -273,10 +295,33 @@ def api_upload_image():
     file = request.files['image']
     if not file.filename:
         return jsonify({'error': '无效的文件'}), 400
-    ext = os.path.splitext(file.filename)[1].lower() or '.png'
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXT:
+        return jsonify({'error': '不支持的图片格式，请使用 PNG/JPEG/WebP'}), 400
+    file.seek(0, os.SEEK_END)
+    if file.tell() > MAX_IMAGE_SIZE:
+        return jsonify({'error': '图片大小超过 20MB 限制'}), 400
+    file.seek(0)
+
+    file_hash = request.form.get('hash', '').strip()
+    if file_hash:
+        index = _load_hash_index()
+        existing = index.get(file_hash)
+        if existing:
+            filepath = os.path.join(GENERATED_DIR, existing)
+            if os.path.exists(filepath):
+                return jsonify({'image_url': f'/static/generated/{existing}'})
+            del index[file_hash]
+
     filename = f'img_{uuid.uuid4().hex[:12]}{ext}'
     os.makedirs(GENERATED_DIR, exist_ok=True)
     file.save(os.path.join(GENERATED_DIR, filename))
+
+    if file_hash:
+        index = _load_hash_index()
+        index[file_hash] = filename
+        _save_hash_index(index)
+
     return jsonify({'image_url': f'/static/generated/{filename}'})
 
 
@@ -340,7 +385,7 @@ def _migrate_existing_images():
             continue
         seen.add(old)
         new_path = _normalize_image_path(old)
-        if new_path != old:
+        if new_path and new_path != old:
             update_prompt(p['id'], image_path=new_path)
 
 

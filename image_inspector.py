@@ -1,5 +1,6 @@
 import io
 import json
+import re
 from PIL import Image, UnidentifiedImageError
 
 EXIF_USER_COMMENT = 0x9286
@@ -55,12 +56,27 @@ def _decode_user_comment(data):
     return text if text else None
 
 
+def _extract_model_name(parameters_str, raw_text):
+    # Search for "Model: xxx" in parameters, excluding "Model hash:" etc.
+    for text in (parameters_str, raw_text):
+        if not text:
+            continue
+        m = re.search(r'(?<!\w)(?:Model|model):\s*([^,\n]+)', text)
+        if m:
+            val = m.group(1).strip()
+            if val and not any(kw in val.lower() for kw in ('hash', 'sha', 'token', 'path')):
+                return val
+    return ''
+
+
 def _format_sd_result(raw_text, source):
     parsed = _parse_sd_metadata(raw_text)
+    model_name = _extract_model_name(parsed['parameters'], raw_text)
     return {
         'prompt': parsed['prompt'],
         'negative_prompt': parsed['negative_prompt'],
         'parameters': parsed['parameters'],
+        'model_name': model_name,
         'raw_metadata': raw_text,
         'source': source
     }
@@ -101,6 +117,17 @@ def _parse_comfyui(prompt_json_str):
             if parts:
                 params_parts.append(f'{ct}: ' + ', '.join(parts))
 
+    # CheckpointLoaderSimple / UNETLoader nodes hold the model name
+    model_name = ''
+    for node_id, node in nodes.items():
+        ct = node.get('class_type', '')
+        inputs = node.get('inputs', {})
+        if ct in ('CheckpointLoaderSimple', 'CheckpointLoader', 'UNETLoader'):
+            ckpt = inputs.get('ckpt_name', '')
+            if ckpt:
+                model_name = ckpt
+                break
+
     if not positive_text and not negative_text:
         return None
 
@@ -109,6 +136,7 @@ def _parse_comfyui(prompt_json_str):
         'prompt': positive_text,
         'negative_prompt': negative_text,
         'parameters': params_str,
+        'model_name': model_name,
         'raw_metadata': prompt_json_str,
         'source': 'comfyui'
     }

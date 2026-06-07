@@ -1384,7 +1384,7 @@ input, textarea, select, button {
     z-index: 1;
 }
 
-/* Rivet decorators - top-left */
+/* Rivet decorators - top-right */
 .dialog::after {
     content: '';
     position: absolute;
@@ -1397,14 +1397,6 @@ input, textarea, select, button {
     border-radius: 50%;
     box-shadow: inset -1px -1px 0 rgba(0,0,0,0.4), inset 1px 1px 0 rgba(255,255,255,0.08);
 }
-
-/* Rivet decorators - bottom corners via box-shadow are tricky, use extra pseudo */
-/* Instead, use extra pseudo-element for the rivet is already ::after at top-right,
-   we'll add a bottom-left rivet via a second pseudo by using the dialog header h3 trick...
-   Actually, we can only have 2 pseudo-elements. Let me adjust.
-   ::before = hazard stripe, ::after = top-right rivet.
-   Bottom-left rivet needs to be on .dialog > h3 or something else.
-   Let me use the h3 to host the bottom-left rivet or use background. */
 
 .dialog h3 {
     font-family: var(--font-heading);
@@ -1426,9 +1418,6 @@ input, textarea, select, button {
     margin-right: 8px;
     vertical-align: middle;
 }
-
-/* Bottom-left rivet via a div or something... 
-   I'll use a background pattern approach for a subtle "rivet" feel across dialog */
 
 .sd-model-param-grid {
     display: grid;

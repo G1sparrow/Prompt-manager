@@ -7,6 +7,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'prompts.db')
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -278,7 +279,7 @@ def delete_prompt(prompt_id):
     conn.close()
 
 
-def update_prompt(prompt_id, title=None, content=None, image_path=None, model=None, sampler=None, steps=None, cfg=None, seed=None, negative_content=None):
+def update_prompt(prompt_id, title=None, content=None, image_path=None, model=None, sampler=None, steps=None, cfg=None, seed=None, negative_content=None, summary=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -311,6 +312,9 @@ def update_prompt(prompt_id, title=None, content=None, image_path=None, model=No
     if negative_content is not None:
         fields.append('negative_content = ?')
         values.append(negative_content)
+    if summary is not None:
+        fields.append('summary = ?')
+        values.append(summary)
 
     if fields:
         values.append(prompt_id)

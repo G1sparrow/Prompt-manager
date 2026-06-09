@@ -758,6 +758,11 @@ function showSaveDialog(source) {
     document.getElementById('dialog-seed').value = '';
     document.getElementById('dialog-summary').value = '';
 
+    document.getElementById('dialog-image-url').value = '';
+    document.getElementById('dialog-image-preview').style.display = 'none';
+    document.getElementById('dialog-image-preview').src = '';
+    document.getElementById('dialog-image-placeholder').style.display = 'flex';
+
     if (source === 'inspect' && currentInspectFile) {
         computeFileHash(currentInspectFile).then(function (fileHash) {
             var formData = new FormData();
@@ -776,11 +781,6 @@ function showSaveDialog(source) {
                 })
                 .catch(function () {});
         });
-    } else {
-        document.getElementById('dialog-image-url').value = '';
-        document.getElementById('dialog-image-preview').style.display = 'none';
-        document.getElementById('dialog-image-preview').src = '';
-        document.getElementById('dialog-image-placeholder').style.display = 'flex';
     }
 
     const posField = document.getElementById('dialog-content-positive');
@@ -1200,7 +1200,9 @@ function escapeHtml(text) {
 }
 
 function computeFileHash(file) {
-    return crypto.subtle.digest('SHA-256', file).then(function (hashBuf) {
+    return file.arrayBuffer().then(function (buf) {
+        return crypto.subtle.digest('SHA-256', buf);
+    }).then(function (hashBuf) {
         var hashArr = Array.from(new Uint8Array(hashBuf));
         return hashArr.map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
     });
